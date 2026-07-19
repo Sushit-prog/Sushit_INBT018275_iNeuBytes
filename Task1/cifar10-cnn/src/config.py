@@ -13,7 +13,7 @@ VAL_FRACTION = 0.10  # -> 45,000 train / 5,000 val / 10,000 test
 BATCH_SIZE = 64
 EPOCHS = 20  
 
-# If Part B needs more epochs, set this explicitly (fails loudly otherwise).
+# If Part B needs more epochs, set this explicitly.
 JUSTIFY_EPOCH_CHANGE = None 
 CUSTOM_EPOCHS = EPOCHS  
 
