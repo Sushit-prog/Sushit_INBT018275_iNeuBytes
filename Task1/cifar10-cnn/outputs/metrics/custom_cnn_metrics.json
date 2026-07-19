@@ -1,0 +1,13 @@
+{
+  "model_name": "custom_cnn",
+  "total_params": 4030218,
+  "trainable_params": 4026506,
+  "epochs_trained": 20,
+  "training_time_seconds": 11424.2,
+  "train_accuracy": 0.8718,
+  "val_accuracy": 0.8614,
+  "test_accuracy": 0.8557,
+  "precision_macro": 0.8624,
+  "recall_macro": 0.8557,
+  "f1_macro": 0.8553
+}
