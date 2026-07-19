@@ -7,8 +7,7 @@ SEED = 42
 
 # Keras' cifar10.load_data() gives 50,000 train / 10,000 test images.
 # We carve a fixed validation set out of the 50,000 train images.
-VAL_FRACTION = 0.10  # -> 45,000 train / 5,000 val / 10,000 test
-
+VAL_FRACTION = 0.10  
 # Training budget 
 BATCH_SIZE = 64
 EPOCHS = 20  
@@ -26,7 +25,7 @@ INPUT_SHAPE = (32, 32, 3)
 
 # Success thresholds from the task spec
 TRADITIONAL_MIN_TEST_ACC = 0.70
-CUSTOM_MIN_IMPROVEMENT_PP = 3.0  # percentage points over traditional CNN
+CUSTOM_MIN_IMPROVEMENT_PP = 3.0 
 
 # Paths 
 ROOT_DIR = Path(__file__).resolve().parent.parent
