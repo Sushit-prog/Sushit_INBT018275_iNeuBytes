@@ -2,9 +2,9 @@
 CLI entry point for Task 1 (CIFAR-10 CNNs).
 
 Usage:
-    python main.py --part a       # Part A only (traditional CNN)
-    python main.py --part b       # Part B only (custom CNN)
-    python main.py --part both    # both + comparison table (default)
+    python main.py --part a       for Part A only (traditional CNN)
+    python main.py --part b       for Part B only (custom CNN)
+    python main.py --part both    for both + comparison table (default)
 """
 
 import argparse
