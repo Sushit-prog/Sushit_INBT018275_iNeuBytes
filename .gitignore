@@ -13,3 +13,7 @@ __pycache__/
 *.pyc
 data/processed/
 data/*.csv
+# Task3 exceptions - knowledge base must be tracked
+!Task3/ai-mentor-chatbot/data/
+!Task3/ai-mentor-chatbot/data/knowledge_base/
+!Task3/ai-mentor-chatbot/data/knowledge_base/**
