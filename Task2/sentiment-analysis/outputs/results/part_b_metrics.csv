@@ -1,0 +1,2 @@
+model,accuracy,precision,recall,f1_score
+LSTM,0.8871,0.8928,0.8798,0.8863

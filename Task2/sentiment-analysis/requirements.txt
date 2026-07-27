@@ -1,0 +1,26 @@
+# =============================================================================
+# IMDB Sentiment Analysis  —  Python Dependencies
+# =============================================================================
+# Install with:
+#   pip install -r requirements.txt
+#
+# Tested with Python 3.12 on Windows (CPU-only, 8 GB RAM).
+# =============================================================================
+
+# --- Deep Learning (CPU) ----------------------------------------------------
+tensorflow-cpu==2.17.0       # TensorFlow CPU build (includes Keras)
+
+# --- Data processing & ML ---------------------------------------------------
+pandas>=2.0.0,<3.1           # DataFrame I/O for CSV loading & metrics
+numpy>=1.26.0,<2.0           # Array operations (pinned per TF compat)
+scikit-learn>=1.4,<1.10      # LogisticRegression, LinearSVC, TF-IDF, metrics
+
+# --- Natural language toolkit -----------------------------------------------
+nltk>=3.8,<3.11              # Stopwords, tokenization
+
+# --- Plotting & visualisation -----------------------------------------------
+matplotlib>=3.8,<3.12        # Figures, confusion matrices, architecture diagrams
+seaborn>=0.13,<0.15          # Heatmap styling for confusion matrices
+
+# --- Model serialisation ----------------------------------------------------
+joblib>=1.3,<1.7             # Save / load fitted vectorizer
