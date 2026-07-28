@@ -25,45 +25,26 @@ CORS(app)
 # Startup initialisation
 # ---------------------------------------------------------------------------
 
-def _init_knowledge_base() -> None:
-    """Warm the embedding model and ingest the knowledge base on first deploy.
+def _init_model() -> None:
+    """Pre-load the SentenceTransformer embedding model at startup so the
+    first user request doesn't trigger a slow load (or OOM crash).
 
-    The embedding model is loaded once (via ``warmup()``) and reused for both
-    ingestion and query-serving, avoiding OOM from having two copies in memory.
+    We deliberately **skip** auto-ingestion of the knowledge base here because
+    the ingestion pipeline (load + chunk + embed + index) pushes Render's free
+    tier (512 MB) over the memory limit.  The chatbot answers questions using
+    Groq's general knowledge even when the Chroma collection is empty, and the
+    knowledge base can be populated manually by visiting ``/ingest``.
     """
-    from chromadb.errors import NotFoundError  # noqa: PLC0415
-    from src.rag import (  # noqa: PLC0415
-        COLLECTION_NAME,
-        get_embedding_model,
-        get_vectorstore,
-        warmup,
-    )
+    from src.rag import warmup  # noqa: PLC0415
 
     try:
-        client = get_vectorstore()
-        try:
-            coll = client.get_collection(COLLECTION_NAME)
-            count = coll.count()
-            if count > 0:
-                print(f"Knowledge base already populated ({count} chunks).")
-                # Still warm the shared model for query-serving
-                warmup()
-                return
-        except NotFoundError:
-            pass
-
-        print("Knowledge base not found — running ingestion...")
-        # Warm the model once — ingest will reuse this instance
         warmup()
-        shared_model = get_embedding_model()
-        from src.ingest import ingest_all  # noqa: PLC0415
-        ingest_all(model=shared_model)
     except Exception as exc:
-        print(f"[WARNING] Knowledge-base initialisation skipped: {exc}")
+        print(f"[WARNING] Failed to pre-load embedding model: {exc}")
 
 
 print("Initialising AI Mentor Chatbot...")
-_init_knowledge_base()
+_init_model()
 print("Startup complete.\n")
 
 
@@ -81,6 +62,33 @@ def index():
 def health():
     """Health-check endpoint — returns ``{"status": "ok"}``."""
     return jsonify({"status": "ok"}), 200
+
+
+@app.route("/ingest", methods=["POST"])
+def ingest_kb():
+    """Trigger knowledge-base ingestion on demand.
+
+    Returns immediately, ingestion runs in the background so the chat UI
+    stays responsive.  Check the service logs for progress.
+    """
+    import threading
+
+    def _run() -> None:
+        from src.ingest import ingest_all  # noqa: PLC0415
+        from src.rag import get_embedding_model, warmup  # noqa: PLC0415
+        try:
+            print("[/ingest] Starting background ingestion...")
+            warmup()
+            model = get_embedding_model()
+            ingest_all(model=model)
+            print("[/ingest] Ingestion complete.")
+        except Exception as exc:
+            print(f"[/ingest] Ingestion failed: {exc}")
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+    return jsonify({"status": "ingestion started"}), 202
 
 
 @app.route("/respond", methods=["POST"])
