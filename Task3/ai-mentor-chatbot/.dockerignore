@@ -1,0 +1,38 @@
+# Git
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment (not needed in Docker)
+venv/
+.venv/
+
+# Environment files (user secrets)
+.env
+
+# ChromaDB persistence (built at runtime)
+chroma_db/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tests (not needed in production image)
+tests/
+
+# Raw data (not used in deployment)
+data/raw_dataset/
+
+# Deployment documentation (README is useful, but keep image small)
+# README.md excluded because it contains Hugging Face metadata

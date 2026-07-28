@@ -19,16 +19,14 @@ from groq import Groq
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "GROQ_API_KEY is not set. "
-        "Create a .env file in the project root with:\n"
-        "  GROQ_API_KEY=your_key_here\n"
-        "Get a free API key at https://console.groq.com/keys"
-    )
+GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
 
-_client: Groq = Groq(api_key=GROQ_API_KEY)
+# Defer the Groq client creation so that deployments without the key set at
+# import time (e.g. Hugging Face Spaces, where env vars are injected at
+# container runtime) can still start up and surface a friendly error message.
+_client: Groq | None = None
+if GROQ_API_KEY:
+    _client = Groq(api_key=GROQ_API_KEY)
 
 MODEL_NAME = "llama-3.3-70b-versatile"
 MAX_TOKENS = 500
@@ -115,6 +113,17 @@ def ask_groq(user_message: str) -> dict[str, Any]:
 
     # --- Build prompt ------------------------------------------------------
     messages = build_prompt(user_message, context)
+
+    # --- Check that the Groq client is configured --------------------------
+    if _client is None:
+        return {
+            "success": False,
+            "error": (
+                "GROQ_API_KEY is not set. "
+                "Please set the GROQ_API_KEY environment variable. "
+                "Get a key at https://console.groq.com/keys"
+            ),
+        }
 
     # --- Call Groq API -----------------------------------------------------
     try:

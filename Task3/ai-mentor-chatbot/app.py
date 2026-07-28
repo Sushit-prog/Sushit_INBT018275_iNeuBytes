@@ -22,6 +22,52 @@ CORS(app)
 
 
 # ---------------------------------------------------------------------------
+# Startup initialisation
+# ---------------------------------------------------------------------------
+
+def _init_knowledge_base() -> None:
+    """Warm the embedding model and ingest the knowledge base on first deploy.
+
+    The embedding model is loaded once (via ``warmup()``) and reused for both
+    ingestion and query-serving, avoiding OOM from having two copies in memory.
+    """
+    from chromadb.errors import NotFoundError  # noqa: PLC0415
+    from src.rag import (  # noqa: PLC0415
+        COLLECTION_NAME,
+        get_embedding_model,
+        get_vectorstore,
+        warmup,
+    )
+
+    try:
+        client = get_vectorstore()
+        try:
+            coll = client.get_collection(COLLECTION_NAME)
+            count = coll.count()
+            if count > 0:
+                print(f"Knowledge base already populated ({count} chunks).")
+                # Still warm the shared model for query-serving
+                warmup()
+                return
+        except NotFoundError:
+            pass
+
+        print("Knowledge base not found — running ingestion...")
+        # Warm the model once — ingest will reuse this instance
+        warmup()
+        shared_model = get_embedding_model()
+        from src.ingest import ingest_all  # noqa: PLC0415
+        ingest_all(model=shared_model)
+    except Exception as exc:
+        print(f"[WARNING] Knowledge-base initialisation skipped: {exc}")
+
+
+print("Initialising AI Mentor Chatbot...")
+_init_knowledge_base()
+print("Startup complete.\n")
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
@@ -80,4 +126,4 @@ def respond():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)

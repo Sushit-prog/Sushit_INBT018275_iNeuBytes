@@ -23,14 +23,37 @@ CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
 COLLECTION_NAME = "mentor_knowledge_base"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
-# Load the embedding model once so it is reused across all calls.
-# (SentenceTransformer uses caching internally for the same model.)
-_embedding_model: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL_NAME)
+# Lazy-loaded embedding model — initialised on first call to ``warmup()``
+# or the first query.  This avoids crashing at import time on memory-constrained
+# platforms (e.g. Render free tier).
+_embedding_model: SentenceTransformer | None = None
 
 
 # ---------------------------------------------------------------------------
 # Public functions
 # ---------------------------------------------------------------------------
+
+def warmup() -> None:
+    """Pre-load the embedding model and verify it works.
+
+    Call this once during application startup so that the SentenceTransformer
+    model is already in memory when the first user request arrives, avoiding
+    a long cold-start delay or OOM crash at request time.
+    """
+    global _embedding_model
+    if _embedding_model is None:
+        print(f"Loading embedding model: {EMBEDDING_MODEL_NAME} ...")
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        print("Embedding model loaded.")
+
+
+def get_embedding_model() -> SentenceTransformer:
+    """Return the lazy-loaded embedding model, loading it if necessary."""
+    global _embedding_model
+    if _embedding_model is None:
+        warmup()
+    return _embedding_model  # type: ignore[return-value]
+
 
 def get_vectorstore() -> PersistentClient:
     """Return a :class:`chromadb.PersistentClient` connected to
@@ -87,7 +110,8 @@ def query_vectorstore(query: str, top_k: int = 3) -> list[dict[str, Any]]:
 
     # Embed the query
     try:
-        query_embedding = _embedding_model.encode(query, show_progress_bar=False).tolist()
+        model = get_embedding_model()
+        query_embedding = model.encode(query, show_progress_bar=False).tolist()
     except Exception as exc:
         print(f"[WARNING] Failed to embed query: {exc}")
         return []

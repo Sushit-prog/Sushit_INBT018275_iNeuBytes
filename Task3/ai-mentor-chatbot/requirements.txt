@@ -5,3 +5,4 @@ groq
 chromadb==0.5.23
 sentence-transformers
 pandas
+gunicorn

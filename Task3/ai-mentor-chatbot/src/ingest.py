@@ -173,8 +173,15 @@ def _split_by_chars(text: str, chunk_size: int) -> list[str]:
     return chunks
 
 
-def ingest_all() -> None:
+def ingest_all(model: Any = None) -> None:
     """Main pipeline: load, chunk, embed, and store documents in ChromaDB.
+
+    Parameters
+    ----------
+    model:
+        An optional pre-loaded ``SentenceTransformer`` instance.  If ``None``
+        (the default), a new model will be loaded.  Pass a shared model from
+        the caller to avoid loading the same model twice and wasting memory.
 
     Steps:
         1. Load all ``.md`` files from ``data/knowledge_base/``.
@@ -219,9 +226,13 @@ def ingest_all() -> None:
     # ------------------------------------------------------------------
     # 3. Embedding model
     # ------------------------------------------------------------------
-    print(f"Loading embedding model: {EMBEDDING_MODEL_NAME} ...")
-    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    print("Embedding model loaded.\n")
+    if model is None:
+        print(f"Loading embedding model: {EMBEDDING_MODEL_NAME} ...")
+        model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        print("Embedding model loaded.")
+    else:
+        print(f"Reusing pre-loaded embedding model: {EMBEDDING_MODEL_NAME}")
+    print()
 
     # ------------------------------------------------------------------
     # 4. Chroma client
