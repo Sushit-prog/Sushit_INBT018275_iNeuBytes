@@ -233,9 +233,10 @@ def ingest_all() -> None:
     try:
         client.delete_collection(COLLECTION_NAME)
         print(f"Deleted existing collection '{COLLECTION_NAME}'.")
-    except NotFoundError:
-        # Collection didn't exist on first run — that's fine
-        pass
+    except Exception:
+        # Different chromadb versions raise different exceptions when the
+        # collection doesn't exist; catch broadly to handle all of them.
+        print("No existing collection to delete, creating fresh.")
 
     collection = client.create_collection(
         name=COLLECTION_NAME,
