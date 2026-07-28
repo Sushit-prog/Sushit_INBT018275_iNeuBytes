@@ -3,6 +3,6 @@ flask-cors
 python-dotenv
 groq
 chromadb==0.5.23
-sentence-transformers
+fastembed
 pandas
 gunicorn

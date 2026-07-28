@@ -18,7 +18,7 @@ from typing import Any
 import chromadb
 from chromadb import PersistentClient
 from chromadb.errors import NotFoundError
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ from sentence_transformers import SentenceTransformer
 
 CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
 COLLECTION_NAME = "mentor_knowledge_base"
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 DEFAULT_CHUNK_SIZE = 500
 DEFAULT_CHUNK_OVERLAP = 50
 
@@ -228,7 +228,7 @@ def ingest_all(model: Any = None) -> None:
     # ------------------------------------------------------------------
     if model is None:
         print(f"Loading embedding model: {EMBEDDING_MODEL_NAME} ...")
-        model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
         print("Embedding model loaded.")
     else:
         print(f"Reusing pre-loaded embedding model: {EMBEDDING_MODEL_NAME}")
@@ -267,8 +267,8 @@ def ingest_all(model: Any = None) -> None:
         batch_ids = chunk_ids[batch_start:batch_end]
         batch_metadata = chunk_metadata[batch_start:batch_end]
 
-        # SentenceTransformer.encode() returns numpy array → convert to list
-        embeddings = model.encode(batch_chunks, show_progress_bar=False).tolist()
+        # fastembed.embed() returns a generator of numpy arrays → convert to list
+        embeddings = [emb.tolist() for emb in model.embed(batch_chunks)]
 
         collection.add(
             embeddings=embeddings,

@@ -12,7 +12,7 @@ from typing import Any
 import chromadb
 from chromadb import PersistentClient
 from chromadb.errors import NotFoundError
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 
 # ---------------------------------------------------------------------------
@@ -21,12 +21,12 @@ from sentence_transformers import SentenceTransformer
 
 CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
 COLLECTION_NAME = "mentor_knowledge_base"
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 # Lazy-loaded embedding model — initialised on first call to ``warmup()``
-# or the first query.  This avoids crashing at import time on memory-constrained
-# platforms (e.g. Render free tier).
-_embedding_model: SentenceTransformer | None = None
+# or the first query.  Uses ``fastembed`` (ONNX Runtime) which is far
+# lighter than ``sentence-transformers`` + PyTorch (~90 MB vs ~400 MB).
+_embedding_model: TextEmbedding | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -43,11 +43,13 @@ def warmup() -> None:
     global _embedding_model
     if _embedding_model is None:
         print(f"Loading embedding model: {EMBEDDING_MODEL_NAME} ...")
-        _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        _embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+        # Trigger an actual inference to fully load the model into memory
+        _ = list(_embedding_model.embed(["warmup"]))
         print("Embedding model loaded.")
 
 
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model() -> TextEmbedding:
     """Return the lazy-loaded embedding model, loading it if necessary."""
     global _embedding_model
     if _embedding_model is None:
@@ -111,7 +113,7 @@ def query_vectorstore(query: str, top_k: int = 3) -> list[dict[str, Any]]:
     # Embed the query
     try:
         model = get_embedding_model()
-        query_embedding = model.encode(query, show_progress_bar=False).tolist()
+        query_embedding = list(model.embed([query]))[0].tolist()
     except Exception as exc:
         print(f"[WARNING] Failed to embed query: {exc}")
         return []
